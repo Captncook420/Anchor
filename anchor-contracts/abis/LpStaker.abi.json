@@ -1,0 +1,197 @@
+{
+    "functions": [
+        {
+            "name": "stake",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "amount",
+                    "type": "UINT256"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "success",
+                    "type": "BOOL"
+                }
+            ]
+        },
+        {
+            "name": "unstake",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "amount",
+                    "type": "UINT256"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "success",
+                    "type": "BOOL"
+                }
+            ]
+        },
+        {
+            "name": "claim",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "amount",
+                    "type": "UINT256"
+                }
+            ]
+        },
+        {
+            "name": "compound",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "amount",
+                    "type": "UINT256"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "distributed",
+                    "type": "UINT256"
+                }
+            ]
+        },
+        {
+            "name": "pendingReward",
+            "type": "View",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "user",
+                    "type": "ADDRESS"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "rawPending",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "multiplierBps",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "afterMultiplier",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "afterFeeAndBoost",
+                    "type": "UINT256"
+                }
+            ]
+        },
+        {
+            "name": "positionInfo",
+            "type": "View",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "user",
+                    "type": "ADDRESS"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "staked",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "multiplierBps",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "multiplierStart",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "lastClaimBlock",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "cooldownRemaining",
+                    "type": "UINT256"
+                }
+            ]
+        },
+        {
+            "name": "poolInfo",
+            "type": "View",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "totalStaked",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "accRewardPerShare",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "lastRewardBlock",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "rewardPerBlock",
+                    "type": "UINT256"
+                }
+            ]
+        },
+        {
+            "name": "emergencyUnstake",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "amount",
+                    "type": "UINT256"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "success",
+                    "type": "BOOL"
+                }
+            ]
+        },
+        {
+            "name": "setDevAddress",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "newDev",
+                    "type": "ADDRESS"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "success",
+                    "type": "BOOL"
+                }
+            ]
+        }
+    ],
+    "events": []
+}

@@ -1,0 +1,182 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-base);
+  z-index: var(--z-overlay);
+  padding: var(--space-lg);
+}
+
+.card {
+  width: 100%;
+  max-width: 560px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl);
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover), var(--accent));
+  background-size: 200% 100%;
+  animation: gradientShift 3s ease infinite;
+}
+
+.iconRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+
+.icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  background: var(--accent-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: var(--leading-tight);
+}
+
+.subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.scrollArea {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: var(--space-lg);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-xl);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--text-secondary);
+}
+
+.scrollArea::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scrollArea::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: var(--radius-full);
+}
+
+.scrollArea h3 {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: var(--space-lg);
+  margin-bottom: var(--space-sm);
+}
+
+.scrollArea h3:first-child {
+  margin-top: 0;
+}
+
+.scrollArea p {
+  margin-bottom: var(--space-md);
+}
+
+.scrollArea ul {
+  padding-left: var(--space-lg);
+  margin-bottom: var(--space-md);
+}
+
+.scrollArea li {
+  position: relative;
+  padding-left: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.scrollArea li::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 8px;
+  width: 4px;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+}
+
+.scrollHint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-bottom: var(--space-lg);
+  transition: opacity var(--duration-base) var(--ease-out);
+}
+
+.scrollHintHidden {
+  opacity: 0;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+
+.checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-interactive);
+  border-radius: var(--radius-sm);
+  background: var(--surface-interactive);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out);
+}
+
+.checkbox:hover {
+  border-color: var(--accent);
+}
+
+.checkboxChecked {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.checkboxLabel {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}

@@ -1,0 +1,14 @@
+node_modules/
+package-lock.json
+build/
+debug/
+.idea/
+.vs/
+.vscode-test/
+*.log
+npm-debug.log*
+*.tsbuildinfo
+.env
+.env.local
+*.key
+*.wallet

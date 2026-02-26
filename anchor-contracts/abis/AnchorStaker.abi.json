@@ -1,0 +1,40 @@
+{
+    "functions": [
+        {
+            "name": "setSellPressurePool",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "pool",
+                    "type": "ADDRESS"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "success",
+                    "type": "BOOL"
+                }
+            ]
+        },
+        {
+            "name": "sellPressureInfo",
+            "type": "View",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "pool",
+                    "type": "ADDRESS"
+                },
+                {
+                    "name": "accSpPerShare",
+                    "type": "UINT256"
+                }
+            ]
+        }
+    ],
+    "events": []
+}

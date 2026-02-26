@@ -1,0 +1,75 @@
+{
+    "functions": [
+        {
+            "name": "platformFeeInfo",
+            "type": "View",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "pendingFee",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "creator",
+                    "type": "ADDRESS"
+                },
+                {
+                    "name": "anchorToken",
+                    "type": "ADDRESS"
+                }
+            ]
+        },
+        {
+            "name": "setCreator",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "newCreator",
+                    "type": "ADDRESS"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "success",
+                    "type": "BOOL"
+                }
+            ]
+        },
+        {
+            "name": "setSellPressurePool",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "pool",
+                    "type": "ADDRESS"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "success",
+                    "type": "BOOL"
+                }
+            ]
+        },
+        {
+            "name": "harvestFees",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "amount",
+                    "type": "UINT256"
+                }
+            ]
+        }
+    ],
+    "events": []
+}

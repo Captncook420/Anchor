@@ -1,0 +1,33 @@
+{
+    "name": "anchor-contracts",
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+        "build:anchor-token": "asc src/anchor-token/index.ts --target anchor-token --measure --uncheckedBehavior never",
+        "build:anchor-staker": "asc src/anchor-staker/index.ts --target anchor-staker --measure --uncheckedBehavior never",
+        "build:anchor-factory": "asc src/anchor-factory/index.ts --target anchor-factory --measure --uncheckedBehavior never",
+        "build:child-token": "asc src/child-token/index.ts --target child-token --measure --uncheckedBehavior never",
+        "build:child-staker": "asc src/child-staker/index.ts --target child-staker --measure --uncheckedBehavior never",
+        "build:tester-token": "asc src/tester-token/index.ts --target tester-token --measure --uncheckedBehavior never",
+        "build": "npm run build:anchor-token && npm run build:anchor-staker && npm run build:anchor-factory && npm run build:child-token && npm run build:child-staker && npm run build:tester-token",
+        "deploy": "tsx deploy/deploy.ts",
+        "format": "prettier --write ."
+    },
+    "dependencies": {
+        "@assemblyscript/loader": "^0.28.9",
+        "@btc-vision/as-bignum": "^0.1.2",
+        "@btc-vision/bitcoin": "rc",
+        "@btc-vision/btc-runtime": "^1.11.0-rc.10",
+        "@btc-vision/transaction": "rc",
+        "dotenv": "^17.3.1",
+        "opnet": "rc",
+        "tsx": "^4.21.0"
+    },
+    "devDependencies": {
+        "@btc-vision/assemblyscript": "^0.29.2",
+        "@btc-vision/opnet-transform": "^1.2.0",
+        "@eslint/js": "^10.0.1",
+        "eslint": "^10.0.2",
+        "prettier": "^3.8.1"
+    }
+}

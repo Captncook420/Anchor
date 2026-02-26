@@ -1,0 +1,36 @@
+{
+    "functions": [
+        {
+            "name": "authorizeChildStaker",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "staker",
+                    "type": "ADDRESS"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "success",
+                    "type": "BOOL"
+                }
+            ]
+        },
+        {
+            "name": "getFactory",
+            "type": "View",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "factory",
+                    "type": "ADDRESS"
+                }
+            ]
+        }
+    ],
+    "events": []
+}
