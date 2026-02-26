@@ -1,97 +1,80 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { useToast } from '../common/Toast';
 import { useWallet } from '../../hooks/useWallet';
-import { numberToBigint } from '../../utils/bigint';
-import {
-  launchToken,
-  LAUNCH_STEPS,
-  type LaunchStep,
-  type LaunchResult,
-  type StepStatus,
-} from '../../services/DeploymentService';
-
-function initSteps(): LaunchStep[] {
-  return LAUNCH_STEPS.map((s) => ({ ...s, status: 'pending' as StepStatus }));
-}
+import { useDeployment } from '../../contexts/DeploymentContext';
+import type { StepStatus } from '../../services/DeploymentService';
 
 export function CreateTokenForm({ onLaunchComplete }: { onLaunchComplete?: () => void } = {}) {
   const [name, setName] = useState('');
   const [symbol, setSymbol] = useState('');
   const [motoAmount, setMotoAmount] = useState('');
-  const [launching, setLaunching] = useState(false);
-  const [steps, setSteps] = useState<LaunchStep[]>(initSteps);
-  const [result, setResult] = useState<LaunchResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const abortRef = useRef(false);
   const { addToast } = useToast();
   const { connected, provider, network, walletAddress, address } = useWallet();
+  const deployment = useDeployment();
 
   const isValid = name.length > 0 && symbol.length > 0 && Number(motoAmount) > 0;
-  const showStepper = launching || result !== null || error !== null;
 
-  const handleStep = useCallback(
-    (stepId: string, update: Partial<LaunchStep>) => {
-      setSteps((prev) =>
-        prev.map((s) => (s.id === stepId ? { ...s, ...update } : s)),
-      );
-    },
-    [],
-  );
-
-  const handleLaunch = useCallback(async () => {
+  const handleLaunch = useCallback(() => {
     if (!address || !walletAddress) return;
-    setLaunching(true);
-    setError(null);
-    setResult(null);
-    setSteps(initSteps());
-    abortRef.current = false;
-
-    try {
-      const moto = numberToBigint(Number(motoAmount));
-      const launchResult = await launchToken(
-        { name, symbol, motoAmount: moto },
-        provider,
-        network,
-        walletAddress,
-        address,
-        handleStep,
-      );
-      setResult(launchResult);
-      onLaunchComplete?.();
-      addToast({
-        type: 'success',
-        title: 'Token Launched',
-        message: `${name} ($${symbol}) deployed successfully!`,
-      });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(msg);
-
-      // Mark first active step as error
-      setSteps((prev) => {
-        const active = prev.find((s) => s.status === 'active');
-        if (!active) return prev;
-        return prev.map((s) =>
-          s.id === active.id ? { ...s, status: 'error' as StepStatus, error: msg } : s,
-        );
-      });
-
-      addToast({ type: 'error', title: 'Launch Failed', message: msg });
-    } finally {
-      setLaunching(false);
-    }
-  }, [name, symbol, motoAmount, address, walletAddress, provider, network, addToast, handleStep]);
+    deployment.launch(name, symbol, motoAmount, provider, network, walletAddress, address);
+    addToast({ type: 'info', title: 'Launching Token', message: `Deploying ${name} ($${symbol})...` });
+  }, [name, symbol, motoAmount, address, walletAddress, provider, network, deployment, addToast]);
 
   const handleReset = useCallback(() => {
-    setSteps(initSteps());
-    setResult(null);
-    setError(null);
+    deployment.reset();
     setName('');
     setSymbol('');
     setMotoAmount('');
-  }, []);
+  }, [deployment]);
+
+  // Show stepper if deployment is active or finished
+  if (deployment.hasDeployment) {
+    return (
+      <Card glow>
+        <h2 style={headerStyle}>Launch a Token</h2>
+        <p style={subtitleStyle}>
+          Deploying {deployment.tokenName} (${deployment.tokenSymbol})...
+        </p>
+
+        <div style={{ display: 'grid', gap: 'var(--space-lg)' }}>
+          {/* Stepper */}
+          <div style={{ display: 'grid', gap: 'var(--space-sm)' }}>
+            {deployment.steps.map((step, i) => (
+              <StepRow key={step.id} step={step} index={i} />
+            ))}
+          </div>
+
+          {/* Error */}
+          {deployment.error && (
+            <div style={errorBoxStyle}>
+              <span style={{ fontWeight: 600 }}>Error:</span> {deployment.error}
+            </div>
+          )}
+
+          {/* Result */}
+          {deployment.result && (
+            <div style={successBoxStyle}>
+              <div style={{ fontWeight: 600, marginBottom: 'var(--space-sm)' }}>
+                {deployment.tokenName} (${deployment.tokenSymbol}) launched!
+              </div>
+              <ResultRow label="Token" value={deployment.result.childToken} />
+              <ResultRow label="Staker" value={deployment.result.childStaker} />
+              <ResultRow label="LP Pair" value={deployment.result.lpPair} />
+            </div>
+          )}
+
+          {/* Actions */}
+          {!deployment.launching && (
+            <Button fullWidth variant="secondary" onClick={() => { handleReset(); onLaunchComplete?.(); }}>
+              Launch Another Token
+            </Button>
+          )}
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card glow>
@@ -100,84 +83,47 @@ export function CreateTokenForm({ onLaunchComplete }: { onLaunchComplete?: () =>
         Deploy a child token + staker pair. 5% goes to you, 95% seeds LP with MOTO.
       </p>
 
-      {!showStepper ? (
-        <div style={{ display: 'grid', gap: 'var(--space-lg)' }}>
-          <Field label="Token Name" placeholder="e.g. SatoshiDoge" value={name} onChange={setName} />
-          <Field
-            label="Token Symbol"
-            placeholder="e.g. SDOGE"
-            value={symbol}
-            onChange={setSymbol}
-            maxLength={8}
-          />
-          <Field
-            label="MOTO Amount"
-            placeholder="Amount of MOTO for initial LP"
-            value={motoAmount}
-            onChange={setMotoAmount}
-            type="number"
-          />
+      <div style={{ display: 'grid', gap: 'var(--space-lg)' }}>
+        <Field label="Token Name" placeholder="e.g. SatoshiDoge" value={name} onChange={setName} />
+        <Field
+          label="Token Symbol"
+          placeholder="e.g. SDOGE"
+          value={symbol}
+          onChange={setSymbol}
+          maxLength={8}
+        />
+        <Field
+          label="MOTO Amount"
+          placeholder="Amount of MOTO for initial LP"
+          value={motoAmount}
+          onChange={setMotoAmount}
+          type="number"
+        />
 
-          <div style={infoBoxStyle}>
-            <InfoRow label="Total Supply" value="1,000,000,000" />
-            <InfoRow label="Creator Allocation" value="5% (50,000,000)" />
-            <InfoRow label="LP Allocation" value="95% (950,000,000)" />
-            <InfoRow label="Platform Fee" value="1% of staking emissions" />
-            <InfoRow label="Creator Dev Fee" value="10% (goes to you)" />
-          </div>
-
-          <Button
-            fullWidth
-            size="lg"
-            disabled={!isValid || !connected}
-            onClick={() => void handleLaunch()}
-          >
-            {!connected ? 'Connect Wallet' : 'Launch Token'}
-          </Button>
+        <div style={infoBoxStyle}>
+          <InfoRow label="Total Supply" value="1,000,000,000" />
+          <InfoRow label="Creator Allocation" value="5% (50,000,000)" />
+          <InfoRow label="LP Allocation" value="95% (950,000,000)" />
+          <InfoRow label="Platform Fee" value="1% of staking emissions" />
+          <InfoRow label="Creator Dev Fee" value="10% (goes to you)" />
         </div>
-      ) : (
-        <div style={{ display: 'grid', gap: 'var(--space-lg)' }}>
-          {/* Stepper */}
-          <div style={{ display: 'grid', gap: 'var(--space-sm)' }}>
-            {steps.map((step, i) => (
-              <StepRow key={step.id} step={step} index={i} />
-            ))}
-          </div>
 
-          {/* Error */}
-          {error && (
-            <div style={errorBoxStyle}>
-              <span style={{ fontWeight: 600 }}>Error:</span> {error}
-            </div>
-          )}
-
-          {/* Result */}
-          {result && (
-            <div style={successBoxStyle}>
-              <div style={{ fontWeight: 600, marginBottom: 'var(--space-sm)' }}>
-                {name} (${symbol}) launched!
-              </div>
-              <ResultRow label="Token" value={result.childToken} />
-              <ResultRow label="Staker" value={result.childStaker} />
-              <ResultRow label="LP Pair" value={result.lpPair} />
-            </div>
-          )}
-
-          {/* Actions */}
-          {!launching && (
-            <Button fullWidth variant="secondary" onClick={handleReset}>
-              Launch Another Token
-            </Button>
-          )}
-        </div>
-      )}
+        <Button
+          fullWidth
+          size="lg"
+          disabled={!isValid || !connected || deployment.launching}
+          onClick={handleLaunch}
+        >
+          {!connected ? 'Connect Wallet' : 'Launch Token'}
+        </Button>
+      </div>
     </Card>
   );
 }
 
 // ── Step Row ──
 
-function StepRow({ step, index }: { step: LaunchStep; index: number }) {
+function StepRow({ step, index }: { step: { id: string; label: string; status: StepStatus; result?: string }; index: number }) {
   const icon = stepIcon(step.status);
   const color = stepColor(step.status);
 

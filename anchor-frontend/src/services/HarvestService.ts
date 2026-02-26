@@ -80,7 +80,7 @@ export async function harvestAndBurn(
   );
 
   const harvestResult: CallResult = await stakerContract.harvestFees();
-  const harvestTx = await broadcastCall(harvestResult, walletAddress, network);
+  const harvestTx = await broadcastCall(harvestResult, walletAddress, network, provider);
   if (!harvestTx.success) throw new Error(`Harvest failed: ${harvestTx.error}`);
 
   const harvestedAmount = (harvestResult.properties as { amount: bigint }).amount;
@@ -109,7 +109,7 @@ export async function harvestAndBurn(
     Address.fromString(MOTOSWAP_ROUTER),
     harvestedAmount,
   );
-  const approveTx = await broadcastCall(approveResult, walletAddress, network);
+  const approveTx = await broadcastCall(approveResult, walletAddress, network, provider);
   if (!approveTx.success) throw new Error(`Approve failed: ${approveTx.error}`);
 
   onStep('approve-router', { status: 'done' });
@@ -132,7 +132,7 @@ export async function harvestAndBurn(
     senderAddress,
     deadline,
   );
-  const swapMotoTx = await broadcastCall(swapMotoResult, walletAddress, network);
+  const swapMotoTx = await broadcastCall(swapMotoResult, walletAddress, network, provider);
   if (!swapMotoTx.success) throw new Error(`Swap to MOTO failed: ${swapMotoTx.error}`);
 
   onStep('swap-moto', { status: 'done' });
@@ -147,7 +147,7 @@ export async function harvestAndBurn(
     senderAddress,
     deadline,
   );
-  const swapAnchorTx = await broadcastCall(swapAnchorResult, walletAddress, network);
+  const swapAnchorTx = await broadcastCall(swapAnchorResult, walletAddress, network, provider);
   if (!swapAnchorTx.success) throw new Error(`Swap to ANCHOR failed: ${swapAnchorTx.error}`);
 
   onStep('swap-anchor', { status: 'done' });
@@ -178,13 +178,13 @@ export async function harvestAndBurn(
     Address.fromString(MOTOSWAP_ROUTER),
     motoBal,
   );
-  await broadcastCall(approveMoto, walletAddress, network);
+  await broadcastCall(approveMoto, walletAddress, network, provider);
 
   const approveAnchor: CallResult = await anchorToken.increaseAllowance(
     Address.fromString(MOTOSWAP_ROUTER),
     anchorBal,
   );
-  await broadcastCall(approveAnchor, walletAddress, network);
+  await broadcastCall(approveAnchor, walletAddress, network, provider);
 
   onStep('approve-lp', { status: 'done' });
 
@@ -201,7 +201,7 @@ export async function harvestAndBurn(
     senderAddress,
     deadline,
   );
-  const addLiqTx = await broadcastCall(addLiqResult, walletAddress, network);
+  const addLiqTx = await broadcastCall(addLiqResult, walletAddress, network, provider);
   if (!addLiqTx.success) throw new Error(`Add liquidity failed: ${addLiqTx.error}`);
 
   onStep('add-lp', { status: 'done' });
@@ -220,7 +220,7 @@ export async function harvestAndBurn(
       Address.fromString(DEAD_ADDRESS),
       lpBal,
     );
-    const burnTx = await broadcastCall(burnResult, walletAddress, network);
+    const burnTx = await broadcastCall(burnResult, walletAddress, network, provider);
     if (!burnTx.success) throw new Error(`Burn LP failed: ${burnTx.error}`);
   }
 

@@ -35,14 +35,26 @@ export interface ChildToken {
   pendingPlatformFee: bigint;
 }
 
-export interface Transaction {
+export type ActivityType =
+  | 'stake' | 'unstake' | 'claim' | 'compound'
+  | 'buy' | 'sell' | 'lp'
+  | 'create' | 'harvest' | 'approve';
+
+export interface Activity {
   id: string;
-  type: 'stake' | 'unstake' | 'claim' | 'compound';
+  type: ActivityType;
   amount: number;
+  tokenSymbol?: string;
+  tokenAddress?: string;
+  motoAmount?: number;
   timestamp: number;
   status: 'confirmed' | 'pending' | 'failed';
   txHash: string;
+  wallet?: string;
 }
+
+/** @deprecated Use Activity instead */
+export type Transaction = Activity;
 
 export interface RewardsBreakdown {
   baseEmission: number;

@@ -219,7 +219,7 @@ export function useDexActions(tokenAddr: string) {
     if (!router || !motoContract || !address || !walletAddress || !tokenAddr) throw new Error('Not connected');
     setBusy(true);
     try {
-      const approveResult = await ensureAllowance(motoContract, address, MOTOSWAP_ROUTER, motoAmount, walletAddress, network);
+      const approveResult = await ensureAllowance(motoContract, address, MOTOSWAP_ROUTER, motoAmount, walletAddress, network, provider);
       if (approveResult && !approveResult.success) throw new Error((approveResult as { error: string }).error);
 
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
@@ -228,12 +228,12 @@ export function useDexActions(tokenAddr: string) {
         [Address.fromString(MOTO_TOKEN), Address.fromString(tokenAddr)],
         address, deadline,
       );
-      const tx = await broadcastCall(sim, walletAddress, network);
+      const tx = await broadcastCall(sim, walletAddress, network, provider);
       if (!tx.success) throw new Error((tx as { error: string }).error);
       void fetchBalances();
       return (tx as { transactionId: string }).transactionId;
     } finally { setBusy(false); }
-  }, [router, motoContract, address, walletAddress, tokenAddr, network, fetchBalances]);
+  }, [router, motoContract, address, walletAddress, tokenAddr, network, provider, fetchBalances]);
 
   // ── Sell (token → MOTO) ──
 
@@ -241,7 +241,7 @@ export function useDexActions(tokenAddr: string) {
     if (!router || !tokenContract || !address || !walletAddress || !tokenAddr) throw new Error('Not connected');
     setBusy(true);
     try {
-      const approveResult = await ensureAllowance(tokenContract, address, MOTOSWAP_ROUTER, tokenAmount, walletAddress, network);
+      const approveResult = await ensureAllowance(tokenContract, address, MOTOSWAP_ROUTER, tokenAmount, walletAddress, network, provider);
       if (approveResult && !approveResult.success) throw new Error((approveResult as { error: string }).error);
 
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
@@ -250,12 +250,12 @@ export function useDexActions(tokenAddr: string) {
         [Address.fromString(tokenAddr), Address.fromString(MOTO_TOKEN)],
         address, deadline,
       );
-      const tx = await broadcastCall(sim, walletAddress, network);
+      const tx = await broadcastCall(sim, walletAddress, network, provider);
       if (!tx.success) throw new Error((tx as { error: string }).error);
       void fetchBalances();
       return (tx as { transactionId: string }).transactionId;
     } finally { setBusy(false); }
-  }, [router, tokenContract, address, walletAddress, tokenAddr, network, fetchBalances]);
+  }, [router, tokenContract, address, walletAddress, tokenAddr, network, provider, fetchBalances]);
 
   // ── Add Liquidity (token + MOTO → LP) ──
 
@@ -264,10 +264,10 @@ export function useDexActions(tokenAddr: string) {
     setBusy(true);
     try {
       // Approve tokens sequentially — wallet can only handle one popup at a time
-      const appToken = await ensureAllowance(tokenContract, address, MOTOSWAP_ROUTER, tokenAmount, walletAddress, network);
+      const appToken = await ensureAllowance(tokenContract, address, MOTOSWAP_ROUTER, tokenAmount, walletAddress, network, provider);
       if (appToken && !appToken.success) throw new Error((appToken as { error: string }).error);
 
-      const appMoto = await ensureAllowance(motoContract, address, MOTOSWAP_ROUTER, motoAmount, walletAddress, network);
+      const appMoto = await ensureAllowance(motoContract, address, MOTOSWAP_ROUTER, motoAmount, walletAddress, network, provider);
       if (appMoto && !appMoto.success) throw new Error((appMoto as { error: string }).error);
 
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
@@ -280,12 +280,12 @@ export function useDexActions(tokenAddr: string) {
         address,
         deadline,
       );
-      const tx = await broadcastCall(sim, walletAddress, network);
+      const tx = await broadcastCall(sim, walletAddress, network, provider);
       if (!tx.success) throw new Error((tx as { error: string }).error);
       void fetchBalances();
       return (tx as { transactionId: string }).transactionId;
     } finally { setBusy(false); }
-  }, [router, tokenContract, motoContract, address, walletAddress, tokenAddr, network, fetchBalances]);
+  }, [router, tokenContract, motoContract, address, walletAddress, tokenAddr, network, provider, fetchBalances]);
 
   return {
     motoBalance,

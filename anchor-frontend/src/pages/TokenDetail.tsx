@@ -11,11 +11,13 @@ import { useChildStaking } from '../hooks/useChildStaking';
 import { useDexActions } from '../hooks/useDexActions';
 import { formatNumber, formatPercent, formatAddress } from '../utils/format';
 import { numberToBigint, bigintToNumber } from '../utils/bigint';
+import { useTransactionHistory } from '../hooks/useTransactionHistory';
 
 export function TokenDetail() {
   const { address } = useParams<{ address: string }>();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { addTransaction } = useTransactionHistory();
   const { tokens, loading } = useChildTokens();
 
   const token = tokens.find((t) => t.address === address);
@@ -61,48 +63,52 @@ export function TokenDetail() {
     if (!val || val <= 0) return;
     try {
       const amount = numberToBigint(val);
-      await stake(amount);
+      const txId = await stake(amount);
       addToast({ type: 'success', title: 'Staked', message: `Staked ${val.toLocaleString()} LP tokens` });
+      addTransaction({ type: 'stake', amount: val, tokenSymbol: token?.symbol, tokenAddress: token?.address, timestamp: Date.now(), status: 'pending', txHash: txId });
       setStakeInput('');
     } catch (err: unknown) {
       addToast({ type: 'error', title: 'Stake Failed', message: err instanceof Error ? err.message : String(err) });
     }
-  }, [stakeInput, stake, addToast]);
+  }, [stakeInput, stake, addToast, addTransaction, token?.symbol, token?.address]);
 
   const handleUnstake = useCallback(async () => {
     const val = parseFloat(unstakeInput);
     if (!val || val <= 0) return;
     try {
       const amount = numberToBigint(val);
-      await unstake(amount);
+      const txId = await unstake(amount);
       addToast({ type: 'success', title: 'Unstaked', message: `Unstaked ${val.toLocaleString()} LP tokens` });
+      addTransaction({ type: 'unstake', amount: val, tokenSymbol: token?.symbol, tokenAddress: token?.address, timestamp: Date.now(), status: 'pending', txHash: txId });
       setUnstakeInput('');
     } catch (err: unknown) {
       addToast({ type: 'error', title: 'Unstake Failed', message: err instanceof Error ? err.message : String(err) });
     }
-  }, [unstakeInput, unstake, addToast]);
+  }, [unstakeInput, unstake, addToast, addTransaction, token?.symbol, token?.address]);
 
   const handleClaim = useCallback(async () => {
     try {
-      await claim();
+      const txId = await claim();
       addToast({ type: 'success', title: 'Claimed', message: 'Rewards claimed to your wallet' });
+      addTransaction({ type: 'claim', amount: position.pendingReward, tokenSymbol: token?.symbol, tokenAddress: token?.address, timestamp: Date.now(), status: 'pending', txHash: txId });
     } catch (err: unknown) {
       addToast({ type: 'error', title: 'Claim Failed', message: err instanceof Error ? err.message : String(err) });
     }
-  }, [claim, addToast]);
+  }, [claim, addToast, addTransaction, position.pendingReward, token?.symbol, token?.address]);
 
   const handleCompound = useCallback(async () => {
     const val = parseFloat(compoundInput);
     if (!val || val <= 0) return;
     try {
       const amount = numberToBigint(val);
-      await compound(amount);
+      const txId = await compound(amount);
       addToast({ type: 'success', title: 'Compounded', message: `${val.toLocaleString()} ${token?.symbol ?? ''} rewards minted (multiplier preserved)` });
+      addTransaction({ type: 'compound', amount: val, tokenSymbol: token?.symbol, tokenAddress: token?.address, timestamp: Date.now(), status: 'pending', txHash: txId });
       setCompoundInput('');
     } catch (err: unknown) {
       addToast({ type: 'error', title: 'Compound Failed', message: err instanceof Error ? err.message : String(err) });
     }
-  }, [compound, compoundInput, token?.symbol, addToast]);
+  }, [compound, compoundInput, token?.symbol, token?.address, addToast, addTransaction]);
 
   // ── DEX handlers ──
 
@@ -128,11 +134,12 @@ export function TokenDetail() {
     try {
       const txId = await dex.buy(numberToBigint(val));
       addToast({ type: 'success', title: 'Buy Successful', message: `Bought ${token?.symbol ?? ''} with ${val.toLocaleString()} MOTO. TX: ${txId.slice(0, 12)}...` });
+      addTransaction({ type: 'buy', amount: val, tokenSymbol: token?.symbol, tokenAddress: token?.address, timestamp: Date.now(), status: 'pending', txHash: txId });
       setBuyInput('');
     } catch (err: unknown) {
       addToast({ type: 'error', title: 'Buy Failed', message: err instanceof Error ? err.message : String(err) });
     }
-  }, [buyInput, dex.buy, addToast, token?.symbol]);
+  }, [buyInput, dex.buy, addToast, addTransaction, token?.symbol, token?.address]);
 
   const handleSell = useCallback(async () => {
     const val = parseFloat(sellInput);
@@ -140,11 +147,12 @@ export function TokenDetail() {
     try {
       const txId = await dex.sell(numberToBigint(val));
       addToast({ type: 'success', title: 'Sell Successful', message: `Sold ${val.toLocaleString()} ${token?.symbol ?? ''} for MOTO. TX: ${txId.slice(0, 12)}...` });
+      addTransaction({ type: 'sell', amount: val, tokenSymbol: token?.symbol, tokenAddress: token?.address, timestamp: Date.now(), status: 'pending', txHash: txId });
       setSellInput('');
     } catch (err: unknown) {
       addToast({ type: 'error', title: 'Sell Failed', message: err instanceof Error ? err.message : String(err) });
     }
-  }, [sellInput, dex.sell, addToast, token?.symbol]);
+  }, [sellInput, dex.sell, addToast, addTransaction, token?.symbol, token?.address]);
 
   // LP auto-calculation: typing one side auto-fills the other
   const handleLpTokenChange = useCallback((val: string) => {
@@ -170,12 +178,13 @@ export function TokenDetail() {
     try {
       const txId = await dex.addLiquidity(numberToBigint(tokenVal), numberToBigint(motoVal));
       addToast({ type: 'success', title: 'Liquidity Added', message: `Added ${tokenVal.toLocaleString()} ${token?.symbol ?? ''} + ${motoVal.toLocaleString()} MOTO. TX: ${txId.slice(0, 12)}...` });
+      addTransaction({ type: 'lp', amount: tokenVal, tokenSymbol: token?.symbol, tokenAddress: token?.address, motoAmount: motoVal, timestamp: Date.now(), status: 'pending', txHash: txId });
       setLpTokenInput('');
       setLpMotoInput('');
     } catch (err: unknown) {
       addToast({ type: 'error', title: 'Add LP Failed', message: err instanceof Error ? err.message : String(err) });
     }
-  }, [lpTokenInput, lpMotoInput, dex.addLiquidity, addToast, token?.symbol]);
+  }, [lpTokenInput, lpMotoInput, dex.addLiquidity, addToast, addTransaction, token?.symbol, token?.address]);
 
   const motoBalanceDisplay = bigintToNumber(dex.motoBalance);
   const tokenBalanceDisplay = bigintToNumber(dex.tokenBalance);

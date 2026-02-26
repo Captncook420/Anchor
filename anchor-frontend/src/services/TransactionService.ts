@@ -1,5 +1,5 @@
 import type { Network } from '@btc-vision/bitcoin';
-import type { CallResult } from 'opnet';
+import type { AbstractRpcProvider, CallResult } from 'opnet';
 import { Address } from '@btc-vision/transaction';
 
 export interface TxResult {
@@ -14,16 +14,20 @@ export interface TxError {
 
 export type TxOutcome = TxResult | TxError;
 
-const MAX_SAT_TO_SPEND = 500_000n; // 0.005 BTC safety cap
+const MAX_SAT_TO_SPEND = 1_000_000n; // 0.01 BTC safety cap
 
 /**
  * Send a simulated contract call as a real transaction.
  * Frontend pattern: signer=null, mldsaSigner=null — wallet extension handles signing.
+ *
+ * Cleans the provider's UTXO cache before sending to avoid stale data
+ * causing "Could not decode transaction" errors on sequential TXs.
  */
 export async function broadcastCall(
   callResult: CallResult,
   refundTo: string,
   network: Network,
+  provider?: AbstractRpcProvider,
 ): Promise<TxOutcome> {
   if ('error' in callResult) {
     return { success: false, error: `Simulation error: ${String((callResult as Record<string, unknown>).error)}` };
@@ -32,19 +36,41 @@ export async function broadcastCall(
     return { success: false, error: `Simulation reverted: ${callResult.revert}` };
   }
 
-  try {
-    const receipt = await callResult.sendTransaction({
-      signer: null,
-      mldsaSigner: null,
-      refundTo,
-      maximumAllowedSatToSpend: MAX_SAT_TO_SPEND,
-      feeRate: 10,
-      network,
-    });
+  const sendOpts = {
+    signer: null,
+    mldsaSigner: null,
+    refundTo,
+    maximumAllowedSatToSpend: MAX_SAT_TO_SPEND,
+    feeRate: 10,
+    network,
+  };
 
+  try {
+    if (provider) provider.utxoManager.clean();
+
+    const receipt = await callResult.sendTransaction(sendOpts);
     return { success: true, transactionId: receipt.transactionId };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
+
+    // Retry once on UTXO staleness — clean cache, wait briefly, re-send
+    if (provider && message.includes('Could not decode transaction')) {
+      console.warn('[broadcastCall] UTXO stale, retrying after cache clean...');
+      try {
+        provider.utxoManager.clean();
+        await new Promise((r) => setTimeout(r, 2000));
+        provider.utxoManager.clean();
+
+        const receipt = await callResult.sendTransaction(sendOpts);
+        return { success: true, transactionId: receipt.transactionId };
+      } catch (retryErr: unknown) {
+        console.error('[broadcastCall] retry also failed:', retryErr);
+        const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+        return { success: false, error: retryMsg };
+      }
+    }
+
+    console.error('[broadcastCall] sendTransaction failed:', err);
     return { success: false, error: message };
   }
 }
@@ -61,8 +87,9 @@ export async function ensureAllowance(
   amount: bigint,
   refundTo: string,
   network: Network,
+  provider?: AbstractRpcProvider,
 ): Promise<TxOutcome | null> {
   const spenderAddr = typeof spender === 'string' ? Address.fromString(spender) : spender;
   const increaseResult = await tokenContract.increaseAllowance(spenderAddr, amount);
-  return broadcastCall(increaseResult, refundTo, network);
+  return broadcastCall(increaseResult, refundTo, network, provider);
 }

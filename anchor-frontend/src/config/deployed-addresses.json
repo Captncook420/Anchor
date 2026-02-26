@@ -1,8 +1,8 @@
 {
-  "childTokenTemplate": "0x3e2f204e0851fae3722acd378252f68a009aa336032b04680ab7ce544bdf9d8a",
-  "childStakerTemplate": "0x97d01bb9cebca7fcbfdd1e2bb2982f7a98a044819c86f837d3257d0d3ae2dcff",
-  "anchorFactory": "0x28a3d17a9494f4ffe27ed3ee99fc63754b49e7e615328598b87a7aa7ed88a479",
-  "anchorToken": "0x6ef14a74bbe3004e42076cc33279adf9a8955bcb2e5e3496024c3d5a7315ff9a",
-  "anchorStaker": "0x847bb2f7b4a90f91658f9d6c1e5f68713d7f7a92b0a511b90cc47d1d8afd9ac6",
-  "lpToken": "0x37392711fbbeecaac573d7c17b99380b6c7f6c2d6827041ed8e696ecbba8b446"
+  "childTokenTemplate": "0x869dd342184f0fbdac043b60ea620e93c3bac4338b3f358529368cc190793d82",
+  "childStakerTemplate": "0xe7c38cdeaf467516366e99f6e98b0608d6128afb326e6d582d320b9cb070bcea",
+  "anchorFactory": "0x97ead2ea4ed4eb4ef8c5fe962e72192c226d3374c4d82cb39ff08dca6474c541",
+  "anchorToken": "0x5f90f7cd7bc1afe6ef35ab107b8d738f01c7435eb18eb3dfad8e01b1a5f80a71",
+  "anchorStaker": "0x0b59055097cc1ccb58c6440e538810848842a46509d7daab6e31ef8c6c29e0f5",
+  "lpToken": "0xbf564b41d0a1439386da00a28e20025fc78c994018d92ca67bf7591aa8805c82"
 }

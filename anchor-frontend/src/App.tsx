@@ -7,11 +7,11 @@ import { Dashboard } from './pages/Dashboard';
 import { Stake } from './pages/Stake';
 import { Factory } from './pages/Factory';
 import { TokenDetail } from './pages/TokenDetail';
-import { Admin } from './pages/Admin';
 import { Navbar } from './components/Layout/Navbar';
 import { Footer } from './components/Layout/Footer';
 import { ParticleCanvas } from './components/Layout/ParticleCanvas';
 import { ToastProvider } from './components/common/Toast';
+import { DeploymentProvider } from './contexts/DeploymentContext';
 
 export default function App() {
   const [accepted, accept] = useDisclaimerGate();
@@ -24,6 +24,7 @@ export default function App() {
 
   return (
     <ToastProvider>
+      <DeploymentProvider>
       <ParticleCanvas />
 
       <AnimatePresence mode="wait">
@@ -38,12 +39,12 @@ export default function App() {
               <Route path="/stake" element={<Stake />} />
               <Route path="/factory" element={<Factory />} />
               <Route path="/token/:address" element={<TokenDetail />} />
-              <Route path="/admin" element={<Admin />} />
             </Routes>
             <Footer />
           </BrowserRouter>
         )}
       </AnimatePresence>
+      </DeploymentProvider>
     </ToastProvider>
   );
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { Transaction } from '../types';
+import type { Activity } from '../types';
 import { useLocalStorage } from './useLocalStorage';
 import { useWallet } from './useWallet';
 
@@ -10,19 +10,19 @@ function storageKey(walletAddress: string): string {
 }
 
 export function useTransactionHistory(): {
-  transactions: Transaction[];
-  addTransaction: (tx: Omit<Transaction, 'id'>) => void;
+  transactions: Activity[];
+  addTransaction: (tx: Omit<Activity, 'id'>) => void;
   clearHistory: () => void;
 } {
   const { walletAddress, provider } = useWallet();
   const key = walletAddress ? storageKey(walletAddress) : 'anchor_txs_disconnected';
 
-  const [stored, setStored] = useLocalStorage<Transaction[]>(key, []);
+  const [stored, setStored] = useLocalStorage<Activity[]>(key, []);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const addTransaction = useCallback(
-    (tx: Omit<Transaction, 'id'>) => {
-      const newTx: Transaction = {
+    (tx: Omit<Activity, 'id'>) => {
+      const newTx: Activity = {
         ...tx,
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       };

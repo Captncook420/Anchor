@@ -198,7 +198,7 @@ export function useChildStaking(tokenAddr: string, stakerAddr: string) {
     setActionPending(true);
     try {
       const maxAllowance = BigInt('0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff');
-      const result = await ensureAllowance(lpContract, address, stakerAddr, maxAllowance, walletAddress, network);
+      const result = await ensureAllowance(lpContract, address, stakerAddr, maxAllowance, walletAddress, network, provider);
       if (result && !result.success) throw new Error((result as { error: string }).error);
       setApprovalState('waiting');
       startPolling();
@@ -206,7 +206,7 @@ export function useChildStaking(tokenAddr: string, stakerAddr: string) {
     } finally {
       setActionPending(false);
     }
-  }, [lpContract, address, walletAddress, stakerAddr, network, startPolling]);
+  }, [lpContract, address, walletAddress, stakerAddr, network, provider, startPolling]);
 
   /** Stake LP tokens (step 2 — only call after approval is confirmed). */
   const stake = useCallback(async (amount: bigint): Promise<string> => {
@@ -214,14 +214,14 @@ export function useChildStaking(tokenAddr: string, stakerAddr: string) {
     setActionPending(true);
     try {
       const sim: CallResult = await staker.stake(amount);
-      const tx = await broadcastCall(sim, walletAddress, network);
+      const tx = await broadcastCall(sim, walletAddress, network, provider);
       if (!tx.success) throw new Error((tx as { error: string }).error);
       void fetchPosition();
       return (tx as { transactionId: string }).transactionId;
     } finally {
       setActionPending(false);
     }
-  }, [staker, walletAddress, network, fetchPosition]);
+  }, [staker, walletAddress, network, provider, fetchPosition]);
 
   /** Unstake LP tokens. */
   const unstake = useCallback(async (amount: bigint): Promise<string> => {
@@ -229,14 +229,14 @@ export function useChildStaking(tokenAddr: string, stakerAddr: string) {
     setActionPending(true);
     try {
       const sim: CallResult = await staker.unstake(amount);
-      const tx = await broadcastCall(sim, walletAddress, network);
+      const tx = await broadcastCall(sim, walletAddress, network, provider);
       if (!tx.success) throw new Error((tx as { error: string }).error);
       void fetchPosition();
       return (tx as { transactionId: string }).transactionId;
     } finally {
       setActionPending(false);
     }
-  }, [staker, walletAddress, network, fetchPosition]);
+  }, [staker, walletAddress, network, provider, fetchPosition]);
 
   /** Claim pending rewards (resets multiplier). */
   const claim = useCallback(async (): Promise<string> => {
@@ -244,14 +244,14 @@ export function useChildStaking(tokenAddr: string, stakerAddr: string) {
     setActionPending(true);
     try {
       const sim: CallResult = await staker.claim();
-      const tx = await broadcastCall(sim, walletAddress, network);
+      const tx = await broadcastCall(sim, walletAddress, network, provider);
       if (!tx.success) throw new Error((tx as { error: string }).error);
       void fetchPosition();
       return (tx as { transactionId: string }).transactionId;
     } finally {
       setActionPending(false);
     }
-  }, [staker, walletAddress, network, fetchPosition]);
+  }, [staker, walletAddress, network, provider, fetchPosition]);
 
   /** Compound rewards — mints tokens to wallet without resetting multiplier. */
   const compound = useCallback(async (amount: bigint): Promise<string> => {
@@ -259,14 +259,14 @@ export function useChildStaking(tokenAddr: string, stakerAddr: string) {
     setActionPending(true);
     try {
       const sim: CallResult = await staker.compound(amount);
-      const tx = await broadcastCall(sim, walletAddress, network);
+      const tx = await broadcastCall(sim, walletAddress, network, provider);
       if (!tx.success) throw new Error((tx as { error: string }).error);
       void fetchPosition();
       return (tx as { transactionId: string }).transactionId;
     } finally {
       setActionPending(false);
     }
-  }, [staker, walletAddress, network, fetchPosition]);
+  }, [staker, walletAddress, network, provider, fetchPosition]);
 
   return {
     position,

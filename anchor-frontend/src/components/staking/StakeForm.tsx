@@ -110,7 +110,7 @@ export function StakeForm() {
       const lpToken = getLpToken(provider, network, address);
       const stakerAddr = getContractAddress('anchorStaker', network);
       const maxAllowance = BigInt('0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff');
-      const approvalOutcome = await ensureAllowance(lpToken, address, stakerAddr, maxAllowance, walletAddress, network);
+      const approvalOutcome = await ensureAllowance(lpToken, address, stakerAddr, maxAllowance, walletAddress, network, provider);
       if (approvalOutcome && !approvalOutcome.success) {
         addToast({ type: 'error', title: 'Approval Failed', message: approvalOutcome.error });
         return;
@@ -133,11 +133,11 @@ export function StakeForm() {
 
       const staker = getAnchorStaker(provider, network, address);
       const callResult = await staker.stake(amountBigint);
-      const outcome = await broadcastCall(callResult, walletAddress, network);
+      const outcome = await broadcastCall(callResult, walletAddress, network, provider);
 
       if (outcome.success) {
         addToast({ type: 'success', title: 'Stake Submitted', message: `Staked ${amount} LP tokens.` });
-        addTransaction({ type: 'stake', amount: Number(amount), timestamp: Date.now(), status: 'pending', txHash: outcome.transactionId });
+        addTransaction({ type: 'stake', amount: Number(amount), tokenSymbol: 'ANCHOR', timestamp: Date.now(), status: 'pending', txHash: outcome.transactionId });
         setAmount('');
         refreshAll();
       } else {
@@ -157,11 +157,11 @@ export function StakeForm() {
       const amountBigint = numberToBigint(Number(amount));
       const staker = getAnchorStaker(provider, network, address);
       const callResult = await staker.unstake(amountBigint);
-      const outcome = await broadcastCall(callResult, walletAddress, network);
+      const outcome = await broadcastCall(callResult, walletAddress, network, provider);
 
       if (outcome.success) {
         addToast({ type: 'success', title: 'Unstake Submitted', message: `Unstaking ${amount} LP tokens.` });
-        addTransaction({ type: 'unstake', amount: Number(amount), timestamp: Date.now(), status: 'pending', txHash: outcome.transactionId });
+        addTransaction({ type: 'unstake', amount: Number(amount), tokenSymbol: 'ANCHOR', timestamp: Date.now(), status: 'pending', txHash: outcome.transactionId });
         setAmount('');
         refreshAll();
       } else {
@@ -180,11 +180,11 @@ export function StakeForm() {
     try {
       const staker = getAnchorStaker(provider, network, address);
       const callResult = await staker.claim();
-      const outcome = await broadcastCall(callResult, walletAddress, network);
+      const outcome = await broadcastCall(callResult, walletAddress, network, provider);
 
       if (outcome.success) {
         addToast({ type: 'success', title: 'Claim Submitted', message: `Claiming ${formatNumber(rewards.totalClaimable)} ANCHOR.` });
-        addTransaction({ type: 'claim', amount: rewards.totalClaimable, timestamp: Date.now(), status: 'pending', txHash: outcome.transactionId });
+        addTransaction({ type: 'claim', amount: rewards.totalClaimable, tokenSymbol: 'ANCHOR', timestamp: Date.now(), status: 'pending', txHash: outcome.transactionId });
         refreshAll();
       } else {
         addToast({ type: 'error', title: 'Claim Failed', message: outcome.error });
@@ -230,11 +230,11 @@ export function StakeForm() {
       const compoundBigint = numberToBigint(anchorVal);
       const staker = getAnchorStaker(provider, network, address);
       const callResult = await staker.compound(compoundBigint);
-      const outcome = await broadcastCall(callResult, walletAddress, network);
+      const outcome = await broadcastCall(callResult, walletAddress, network, provider);
 
       if (outcome.success) {
         addToast({ type: 'success', title: 'Compound Submitted', message: `Compounding ${formatNumber(anchorVal)} ANCHOR. After confirmation, add LP with ${formatNumber(motoVal)} MOTO.` });
-        addTransaction({ type: 'compound', amount: anchorVal, timestamp: Date.now(), status: 'pending', txHash: outcome.transactionId });
+        addTransaction({ type: 'compound', amount: anchorVal, tokenSymbol: 'ANCHOR', timestamp: Date.now(), status: 'pending', txHash: outcome.transactionId });
         setCompoundAmount('');
         setCompoundMoto('');
         refreshAll();
@@ -272,12 +272,13 @@ export function StakeForm() {
     try {
       const txId = await dex.buy(numberToBigint(val));
       addToast({ type: 'success', title: 'Buy Submitted', message: `Bought ANCHOR with ${val.toLocaleString()} MOTO. TX: ${txId.slice(0, 12)}...` });
+      addTransaction({ type: 'buy', amount: val, tokenSymbol: 'ANCHOR', timestamp: Date.now(), status: 'pending', txHash: txId });
       setBuyAmount('');
       refreshAll();
     } catch (err) {
       addToast({ type: 'error', title: 'Buy Failed', message: err instanceof Error ? err.message : 'Unknown error' });
     }
-  }, [buyAmount, dex.buy, addToast, refreshAll]);
+  }, [buyAmount, dex.buy, addToast, addTransaction, refreshAll]);
 
   const handleSell = useCallback(async () => {
     const val = parseFloat(sellAmount);
@@ -285,12 +286,13 @@ export function StakeForm() {
     try {
       const txId = await dex.sell(numberToBigint(val));
       addToast({ type: 'success', title: 'Sell Submitted', message: `Sold ${val.toLocaleString()} ANCHOR for MOTO. TX: ${txId.slice(0, 12)}...` });
+      addTransaction({ type: 'sell', amount: val, tokenSymbol: 'ANCHOR', timestamp: Date.now(), status: 'pending', txHash: txId });
       setSellAmount('');
       refreshAll();
     } catch (err) {
       addToast({ type: 'error', title: 'Sell Failed', message: err instanceof Error ? err.message : 'Unknown error' });
     }
-  }, [sellAmount, dex.sell, addToast, refreshAll]);
+  }, [sellAmount, dex.sell, addToast, addTransaction, refreshAll]);
 
   // LP auto-calculation: typing one side auto-fills the other
   const handleLpTokenChange = useCallback((val: string) => {
@@ -316,13 +318,14 @@ export function StakeForm() {
     try {
       const txId = await dex.addLiquidity(numberToBigint(tokenVal), numberToBigint(motoVal));
       addToast({ type: 'success', title: 'Liquidity Added', message: `Added ${tokenVal.toLocaleString()} ANCHOR + ${motoVal.toLocaleString()} MOTO. TX: ${txId.slice(0, 12)}...` });
+      addTransaction({ type: 'lp', amount: tokenVal, tokenSymbol: 'ANCHOR', motoAmount: motoVal, timestamp: Date.now(), status: 'pending', txHash: txId });
       setLpTokenAmount('');
       setLpMotoAmount('');
       refreshAll();
     } catch (err) {
       addToast({ type: 'error', title: 'Add LP Failed', message: err instanceof Error ? err.message : 'Unknown error' });
     }
-  }, [lpTokenAmount, lpMotoAmount, dex.addLiquidity, addToast, refreshAll]);
+  }, [lpTokenAmount, lpMotoAmount, dex.addLiquidity, addToast, addTransaction, refreshAll]);
 
   const slideDirection = TABS.findIndex((t) => t.id === activeTab);
 

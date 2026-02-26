@@ -129,7 +129,7 @@ export async function launchToken(
     config.name,
     config.symbol,
   );
-  const deployTx = await broadcastCall(deployResult, walletAddress, network);
+  const deployTx = await broadcastCall(deployResult, walletAddress, network, provider);
   if (!deployTx.success) throw new Error(`Deploy token failed: ${deployTx.error}`);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -170,7 +170,7 @@ export async function launchToken(
     Address.fromString(MOTOSWAP_ROUTER),
     CHILD_LP_AMOUNT,
   );
-  const approveTx = await broadcastCall(approveChildResult, walletAddress, network);
+  const approveTx = await broadcastCall(approveChildResult, walletAddress, network, provider);
   if (!approveTx.success) throw new Error(`Approve child token failed: ${approveTx.error}`);
 
   // Approve MOTO for router
@@ -187,7 +187,7 @@ export async function launchToken(
     Address.fromString(MOTOSWAP_ROUTER),
     config.motoAmount,
   );
-  const approveMotoTx = await broadcastCall(approveMotoResult, walletAddress, network);
+  const approveMotoTx = await broadcastCall(approveMotoResult, walletAddress, network, provider);
   if (!approveMotoTx.success) throw new Error(`Approve MOTO failed: ${approveMotoTx.error}`);
 
   // Wait for BOTH approval TXs to confirm before addLiquidity
@@ -218,7 +218,7 @@ export async function launchToken(
     senderAddress,
     deadline,
   );
-  const addLiqTx = await broadcastCall(addLiqResult, walletAddress, network);
+  const addLiqTx = await broadcastCall(addLiqResult, walletAddress, network, provider);
   if (!addLiqTx.success) throw new Error(`Add liquidity failed: ${addLiqTx.error}`);
 
   // Wait for addLiquidity TX to confirm before querying the LP pair
@@ -257,7 +257,7 @@ export async function launchToken(
     Address.fromString(childTokenAddr),
     Address.fromString(lpPairAddr),
   );
-  const finalizeTx = await broadcastCall(finalizeResult, walletAddress, network);
+  const finalizeTx = await broadcastCall(finalizeResult, walletAddress, network, provider);
   if (!finalizeTx.success) throw new Error(`Finalize failed: ${finalizeTx.error}`);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
