@@ -16,4 +16,3 @@ CLAUDE.md
 asconfig.json
 package-lock.json
 *.tsbuildinfo
-anchor-contracts/deploy/
