@@ -66,7 +66,7 @@ export function Admin() {
         address ?? undefined,
       );
       const result = await contract.setMinter(Address.fromString(stakerAddr), true);
-      const outcome = await broadcastCall(result, walletAddress!, network);
+      const outcome = await broadcastCall(result, walletAddress!, network, provider);
       if (!outcome.success) throw new Error(outcome.error);
       setLastResult({ ok: true, msg: `setMinter TX: ${outcome.transactionId}` });
       addToast({ type: 'success', title: 'Success', message: 'setMinter sent!' });
@@ -84,7 +84,7 @@ export function Admin() {
         address ?? undefined,
       );
       const result = await contract.setPool(Address.fromString(KNOWN.lpPair), true);
-      const outcome = await broadcastCall(result, walletAddress!, network);
+      const outcome = await broadcastCall(result, walletAddress!, network, provider);
       if (!outcome.success) throw new Error(outcome.error);
       setLastResult({ ok: true, msg: `setPool TX: ${outcome.transactionId}` });
       addToast({ type: 'success', title: 'Success', message: 'setPool sent!' });
@@ -103,7 +103,7 @@ export function Admin() {
         address ?? undefined,
       );
       const result = await contract.setSellPressurePool(Address.fromString(KNOWN.lpPair));
-      const outcome = await broadcastCall(result, walletAddress!, network);
+      const outcome = await broadcastCall(result, walletAddress!, network, provider);
       if (!outcome.success) throw new Error(outcome.error);
       setLastResult({ ok: true, msg: `setSellPressurePool TX: ${outcome.transactionId}` });
       addToast({ type: 'success', title: 'Success', message: 'setSellPressurePool sent!' });
@@ -126,7 +126,7 @@ export function Admin() {
         Address.fromString(KNOWN.anchorToken),
         Address.fromString(stakerAddr),
       );
-      const outcome = await broadcastCall(result, walletAddress!, network);
+      const outcome = await broadcastCall(result, walletAddress!, network, provider);
       if (!outcome.success) throw new Error(outcome.error);
       setLastResult({ ok: true, msg: `setAnchorAddresses TX: ${outcome.transactionId}` });
       addToast({ type: 'success', title: 'Success', message: 'setAnchorAddresses sent!' });

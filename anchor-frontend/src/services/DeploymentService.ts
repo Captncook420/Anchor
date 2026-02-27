@@ -11,7 +11,7 @@ import { Address } from '@btc-vision/transaction';
 import type { Network } from '@btc-vision/bitcoin';
 import { ANCHOR_FACTORY_ABI } from '../abi/anchor-factory.abi';
 import { getContractAddresses } from '../config/contracts';
-import { broadcastCall } from './TransactionService';
+import { broadcastCall, type TxOutcome } from './TransactionService';
 import {
   MOTO_TOKEN,
   MOTOSWAP_ROUTER,
@@ -102,6 +102,23 @@ async function waitForTx(
   throw new Error(`TX ${txHash.slice(0, 16)}… not confirmed within ${timeoutMs / 1000}s`);
 }
 
+// ── Retry helper for timeout errors ──
+
+async function retryOnTimeout(
+  fn: () => Promise<TxOutcome>,
+  maxAttempts: number,
+): Promise<TxOutcome> {
+  for (let i = 0; i < maxAttempts; i++) {
+    const result = await fn();
+    if (result.success || !result.error.toLowerCase().includes('timed out')) return result;
+    if (i < maxAttempts - 1) {
+      console.warn(`[retryOnTimeout] attempt ${i + 1}/${maxAttempts} timed out, retrying in 3s...`);
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+  }
+  return { success: false, error: 'Request timed out after multiple retries' };
+}
+
 // ── Main Launch Orchestrator ──
 
 export async function launchToken(
@@ -156,6 +173,9 @@ export async function launchToken(
   // ── Step 2: Add Initial Liquidity on MotoSwap ──
   onStep('add-lp', { status: 'active' });
 
+  // Clean provider state after the long indexing wait
+  provider.utxoManager.clean();
+
   // Approve child tokens for router
   const childTokenContract: AnyContract = getContract(
     childTokenAddr,
@@ -166,12 +186,20 @@ export async function launchToken(
   );
 
   onStep('add-lp', { status: 'active', result: 'Approving child token…' });
-  const approveChildResult: CallResult = await childTokenContract.increaseAllowance(
-    Address.fromString(MOTOSWAP_ROUTER),
-    CHILD_LP_AMOUNT,
-  );
-  const approveTx = await broadcastCall(approveChildResult, walletAddress, network, provider);
+  const approveTx = await retryOnTimeout(async () => {
+    const sim: CallResult = await childTokenContract.increaseAllowance(
+      Address.fromString(MOTOSWAP_ROUTER),
+      CHILD_LP_AMOUNT,
+    );
+    return broadcastCall(sim, walletAddress, network, provider);
+  }, 3);
   if (!approveTx.success) throw new Error(`Approve child token failed: ${approveTx.error}`);
+
+  // Wait for child token approval to confirm before sending MOTO approval
+  onStep('add-lp', { status: 'active', result: 'Waiting for child token approval (~5 min)…' });
+  await waitForTx(provider, approveTx.transactionId, (elapsed) => {
+    onStep('add-lp', { status: 'active', result: `Waiting for child token approval… ${elapsed}s` });
+  });
 
   // Approve MOTO for router
   const motoContract: AnyContract = getContract(
@@ -183,18 +211,17 @@ export async function launchToken(
   );
 
   onStep('add-lp', { status: 'active', result: 'Approving MOTO…' });
-  const approveMotoResult: CallResult = await motoContract.increaseAllowance(
-    Address.fromString(MOTOSWAP_ROUTER),
-    config.motoAmount,
-  );
-  const approveMotoTx = await broadcastCall(approveMotoResult, walletAddress, network, provider);
+  const approveMotoTx = await retryOnTimeout(async () => {
+    const sim: CallResult = await motoContract.increaseAllowance(
+      Address.fromString(MOTOSWAP_ROUTER),
+      config.motoAmount,
+    );
+    return broadcastCall(sim, walletAddress, network, provider);
+  }, 3);
   if (!approveMotoTx.success) throw new Error(`Approve MOTO failed: ${approveMotoTx.error}`);
 
-  // Wait for BOTH approval TXs to confirm before addLiquidity
-  onStep('add-lp', { status: 'active', result: 'Waiting for approvals to confirm (~5 min)…' });
-  await waitForTx(provider, approveTx.transactionId, (elapsed) => {
-    onStep('add-lp', { status: 'active', result: `Waiting for approvals… ${elapsed}s` });
-  });
+  // Wait for MOTO approval to confirm before addLiquidity
+  onStep('add-lp', { status: 'active', result: 'Waiting for MOTO approval…' });
   await waitForTx(provider, approveMotoTx.transactionId);
 
   // Add liquidity (now that allowances are on-chain)

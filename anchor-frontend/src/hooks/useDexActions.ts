@@ -11,6 +11,24 @@ type AnyContract = any;
 
 const POLL_INTERVAL = 30_000;
 
+/** Poll until a TX is confirmed on-chain (15s intervals, 15 min timeout). */
+async function waitForTxConfirm(
+  provider: { getTransaction: (hash: string) => Promise<unknown> },
+  txHash: string,
+  timeoutMs = 900_000,
+  pollMs = 15_000,
+): Promise<void> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const tx = await provider.getTransaction(txHash);
+      if (tx) return;
+    } catch { /* not confirmed yet */ }
+    await new Promise((r) => setTimeout(r, pollMs));
+  }
+  throw new Error(`TX ${txHash.slice(0, 16)}… not confirmed within ${timeoutMs / 1000}s`);
+}
+
 export interface DexState {
   readonly motoBalance: bigint;
   readonly tokenBalance: bigint;
@@ -221,6 +239,7 @@ export function useDexActions(tokenAddr: string) {
     try {
       const approveResult = await ensureAllowance(motoContract, address, MOTOSWAP_ROUTER, motoAmount, walletAddress, network, provider);
       if (approveResult && !approveResult.success) throw new Error((approveResult as { error: string }).error);
+      if (approveResult?.success) await waitForTxConfirm(provider, approveResult.transactionId);
 
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
       const sim: CallResult = await router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
@@ -243,6 +262,7 @@ export function useDexActions(tokenAddr: string) {
     try {
       const approveResult = await ensureAllowance(tokenContract, address, MOTOSWAP_ROUTER, tokenAmount, walletAddress, network, provider);
       if (approveResult && !approveResult.success) throw new Error((approveResult as { error: string }).error);
+      if (approveResult?.success) await waitForTxConfirm(provider, approveResult.transactionId);
 
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
       const sim: CallResult = await router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
@@ -269,6 +289,10 @@ export function useDexActions(tokenAddr: string) {
 
       const appMoto = await ensureAllowance(motoContract, address, MOTOSWAP_ROUTER, motoAmount, walletAddress, network, provider);
       if (appMoto && !appMoto.success) throw new Error((appMoto as { error: string }).error);
+
+      // Wait for both approval TXs to be confirmed on-chain before addLiquidity
+      if (appToken?.success) await waitForTxConfirm(provider, appToken.transactionId);
+      if (appMoto?.success) await waitForTxConfirm(provider, appMoto.transactionId);
 
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
       const sim: CallResult = await router.addLiquidity(

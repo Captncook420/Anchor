@@ -77,12 +77,15 @@ export async function broadcastCall(
 
 /**
  * Grant allowance for a spender via increaseAllowance.
- * Skips the allowance query (some LP pair contracts don't implement it)
- * and always sends increaseAllowance with the full amount.
+ * Checks current allowance first — skips the TX if already sufficient.
+ * Returns null when no TX was needed.
  */
 export async function ensureAllowance(
-  tokenContract: { increaseAllowance: (...args: unknown[]) => Promise<CallResult> },
-  _owner: Address,
+  tokenContract: {
+    increaseAllowance: (...args: unknown[]) => Promise<CallResult>;
+    allowance?: (...args: unknown[]) => Promise<CallResult>;
+  },
+  owner: Address,
   spender: Address | string,
   amount: bigint,
   refundTo: string,
@@ -90,6 +93,23 @@ export async function ensureAllowance(
   provider?: AbstractRpcProvider,
 ): Promise<TxOutcome | null> {
   const spenderAddr = typeof spender === 'string' ? Address.fromString(spender) : spender;
+
+  // Check current allowance — skip TX if already sufficient
+  if (tokenContract.allowance) {
+    try {
+      const res = await tokenContract.allowance(owner, spenderAddr);
+      if (!res.revert) {
+        const current = (res.properties as { remaining?: bigint; allowance?: bigint; result?: bigint }).remaining
+          ?? (res.properties as { allowance?: bigint }).allowance
+          ?? (res.properties as { result?: bigint }).result
+          ?? 0n;
+        if (current >= amount) return null;
+      }
+    } catch {
+      // allowance check failed — proceed with increaseAllowance
+    }
+  }
+
   const increaseResult = await tokenContract.increaseAllowance(spenderAddr, amount);
   return broadcastCall(increaseResult, refundTo, network, provider);
 }
